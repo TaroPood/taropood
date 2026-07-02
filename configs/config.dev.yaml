@@ -1,0 +1,21 @@
+# --- Application metadata ---------------------------------------------------
+app:
+  name: "taropood"
+  env: "dev"           # APP_ENV
+  version: "dev"
+
+# --- HTTP server (REST / admin / metrics) ----------------------------------
+http:
+  addr: ":8091"                # HTTP_ADDR
+  read_timeout: 10s            # HTTP_READ_TIMEOUT
+  write_timeout: 10s           # HTTP_WRITE_TIMEOUT
+  shutdown_timeout: 15s        # HTTP_SHUTDOWN_TIMEOUT
+
+
+# --- Logging  -------------------------
+log:
+  level: "info"                # LOG_LEVEL
+  format: "json"               # LOG_FORMAT  (json | text)
+  output: "stdout"             # LOG_OUTPUT  
+  add_source: false
+
