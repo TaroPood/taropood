@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	"errors"
 	"log/slog"
 	"net"
 	"net/http"
@@ -13,14 +12,11 @@ import (
 	"github.com/TaroPood/taropood/pkg/api"
 )
 
-func SetupServer(httpCfg *config.HTTPConfig, dbReady func() bool) *api.Server{
+// TODO: replace the no-op check with actual DB/redis health checks
+// when dependencies are implemented.
+func SetupServer(httpCfg *config.HTTPConfig, checks ...func(ctx context.Context) error) *api.Server{
 	mux := http.NewServeMux()
-	healthHandler := handler.NewHealthHandler(func(ctx context.Context) error {
-		if dbReady() {
-			return nil
-		}
-		return errors.New("database not ready")
-	})
+	healthHandler := handler.NewHealthHandler(checks...)
 	healthHandler.RegisterRoutes(mux)
 	
 	server := api.NewServer(httpCfg.Addr, 

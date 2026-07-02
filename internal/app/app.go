@@ -17,11 +17,11 @@ type App struct {
 }
 
 func NewApp(cfg *config.Config) (*App, error) {
+	logger.SetupLog(cfg.Log.Format, cfg.Log.Level)
 	app := &App{
 		config: cfg,
 	}
-	app.server = SetupServer(&cfg.HTTP, func() bool { return true })
-	logger.SetupLog(cfg.Log.Format, cfg.Log.Level)
+	app.server = SetupServer(&cfg.HTTP, func(_ context.Context) error { return nil })
 	slog.Info(cfg.Log.Level)
 	return app, nil
 }

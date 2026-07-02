@@ -6,8 +6,8 @@
 *.dylib
 *.test
 *.out
-/taropood
-/rule-engine
+/taropood*
+/rule-engine*
 
 # Go
 vendor/

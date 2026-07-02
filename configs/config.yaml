@@ -1,7 +1,7 @@
 # --- Application metadata ---------------------------------------------------
 app:
-  name: "rule-engine"
-  env: "development"           # APP_ENV
+  name: "taropood"
+  env: "dev"           # APP_ENV
   version: "dev"
 
 # --- HTTP server (REST / admin / metrics) ----------------------------------
