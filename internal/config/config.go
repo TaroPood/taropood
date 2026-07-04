@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -32,8 +33,8 @@ type HTTPConfig struct {
 type LogConfig struct {
 	Level     string `mapstructure:"level" env:"LOG_LEVEL"`
 	Format    string `mapstructure:"format" env:"LOG_FORMAT"`
-	Output    string `mapstructure:"output" env:"LOG_OUTPUT"`
-	AddSource bool   `mapstructure:"add_source" env:"LOG_ADD_SOURCE"`
+	// Output    string `mapstructure:"output" env:"LOG_OUTPUT"`
+	// AddSource bool   `mapstructure:"add_source" env:"LOG_ADD_SOURCE"`
 }
 
 type PostgresConfig struct {
@@ -51,10 +52,15 @@ type PostgresConfig struct {
 
 func (p *PostgresConfig) DSN() string {
 	return fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=%s&connect_timeout=%d",
-		p.User, p.Password, p.Host, p.Port, p.Db, p.SSLMode, int(p.ConnectTimeout.Seconds()))
+		url.QueryEscape(p.User),
+		url.QueryEscape(p.Password),
+		p.Host, p.Port,
+		url.PathEscape(p.Db),
+		p.SSLMode,
+		int(p.ConnectTimeout.Seconds()),
+	)
 }
 
-// Validate checks required configuration and returns error on first failure.
 func (c *Config) Validate() error {
 	if c.App.Name == "" {
 		return fmt.Errorf("app.name is required")
@@ -62,7 +68,15 @@ func (c *Config) Validate() error {
 	if c.HTTP.Addr == "" {
 		return fmt.Errorf("http.addr is required")
 	}
-
+	if c.Postgres.Host == "" {
+		return fmt.Errorf("postgres.host is required")
+	}
+	if c.Postgres.Port == "" {
+		return fmt.Errorf("postgres.port is required")
+	}
+	if c.Postgres.Db == "" {
+		return fmt.Errorf("postgres.db is required")
+	}
 	return nil
 }
 
@@ -88,37 +102,39 @@ func LoadConfig(path string) (*Config, error) {
 	// Set hardcoded defaults (lowest priority)
 	setDefaults(v)
 
-	// Load config file(s)
 	if path != "" {
-		// Explicit config file path
 		v.SetConfigFile(path)
 		ext := configFileExtension(path)
 		if ext != "" {
 			v.SetConfigType(ext)
 		}
+		if err := v.ReadInConfig(); err != nil {
+			if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
+				return nil, fmt.Errorf("reading config: %w", err)
+			}
+		}
 	} else {
-		// Default search paths
 		v.SetConfigName("config")
 		v.SetConfigType("yaml")
 		v.AddConfigPath(".")
 		v.AddConfigPath("./configs")
 
-		// Load environment-specific overlay: config.dev.yaml
+		if err := v.ReadInConfig(); err != nil {
+			if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
+				return nil, fmt.Errorf("reading config: %w", err)
+			}
+		}
+
 		env := os.Getenv("APP_ENV")
 		if env == "" {
 			env = "dev"
 		}
 		v.SetConfigName("config." + env)
-		// Merge if exists (ignores file not found)
-		_ = v.MergeInConfig()
-	}
-
-	// Read main config
-	if err := v.ReadInConfig(); err != nil {
-		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
-			return nil, fmt.Errorf("reading config: %w", err)
+		if err := v.MergeInConfig(); err != nil {
+			if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
+				return nil, fmt.Errorf("reading env config: %w", err)
+			}
 		}
-		// Config file is optional if all values come from env vars
 	}
 
 	cfg := &Config{}

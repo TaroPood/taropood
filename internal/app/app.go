@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"time"
 
 	"github.com/TaroPood/taropood/internal/config"
 	"github.com/TaroPood/taropood/internal/db"
@@ -34,7 +35,7 @@ func NewApp(cfg *config.Config) (*App, error) {
 	app.db = database
 
 	app.server = SetupServer(&cfg.HTTP, db.ReadinessCheck(database))
-	slog.Info(cfg.Log.Level)
+	slog.Info("application initialized", "log_level", cfg.Log.Level)
 
 	return app, nil
 }
@@ -70,12 +71,28 @@ func (a *App) Shutdown(ctx context.Context) error {
 
 	if a.db != nil {
 		sqlDB, err := a.db.DB()
-		if err == nil {
-			if err := sqlDB.Close(); err != nil {
-				slog.Error("database close error", "error", err)
-			}
-			slog.Info("database connection closed")
+		if err != nil {
+			return fmt.Errorf("get sql.DB for close: %w", err)
 		}
+
+		closeCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+		defer cancel()
+
+		done := make(chan error, 1)
+		go func() {
+			done <- sqlDB.Close()
+		}()
+
+		select {
+		case err := <-done:
+			if err != nil {
+				return fmt.Errorf("db close: %w", err)
+			}
+		case <-closeCtx.Done():
+			return fmt.Errorf("db close timeout")
+		}
+
+		slog.Info("database connection closed")
 	}
 
 	slog.Info("shutdown complete")

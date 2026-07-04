@@ -15,10 +15,9 @@ FROM golang:1.26.4-alpine3.23
 ARG VERSION=dev
 ARG COMMIT=unknown
 
-# -------------------------------------------------------------------
-# Toolchain defaults — CGO_ENABLED=0 for static binaries, consistent
-# with production. Override with --build-arg if you need CGO.
-# -------------------------------------------------------------------
+# CGO_ENABLED=0: pgx driver is pure Go — no CGO needed.
+# If you add a dependency that requires CGO (e.g., cgo-based sqlite),
+# override: docker build --build-arg CGO_ENABLED=1
 ENV CGO_ENABLED=0 \
     GOOS=linux \
     GOPATH=/go \

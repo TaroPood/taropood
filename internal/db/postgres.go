@@ -15,7 +15,7 @@ func NewDataBase(dsn string, maxOpen, maxIdle int, maxLifetime time.Duration) (*
 	dialector = postgres.Open(dsn)
 
 	db, err := gorm.Open(dialector, &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Warn),
+		Logger: logger.Default.LogMode(logger.Silent),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database: %w", err)
