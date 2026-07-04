@@ -146,6 +146,7 @@ func (s *Server) Shutdown() error {
         }
     }
 
+
     if err := s.server.Shutdown(ctx); err != nil {
         return fmt.Errorf("server shutdown: %w", err)
     }

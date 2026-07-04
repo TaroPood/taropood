@@ -1,0 +1,64 @@
+# ============================================================================
+# Taropood — Development Dockerfile
+# ----------------------------------------------------------------------------
+# Single-stage golang image with hot-reload (air), Delve (dlv), and ops tools.
+#
+# Build:  docker build -f deployments/docker/Dockerfile.dev -t rule-engine:dev .
+# Run:    docker compose -f deployments/docker/docker-compose.yml up rule-engine
+#
+# 12-Factor III: All config via environment (no baked-in defaults)
+# ============================================================================
+
+FROM golang:1.26.4-alpine3.23
+
+# Build-time metadata (not baked into binary, just for labeling)
+ARG VERSION=dev
+ARG COMMIT=unknown
+
+# -------------------------------------------------------------------
+# Toolchain defaults — CGO_ENABLED=0 for static binaries, consistent
+# with production. Override with --build-arg if you need CGO.
+# -------------------------------------------------------------------
+ENV CGO_ENABLED=0 \
+    GOOS=linux \
+    GOPATH=/go \
+    GOCACHE=/go-build \
+    GOTRACEBACK=all \
+    PATH="/go/bin:${PATH}"
+
+# -------------------------------------------------------------------
+# Install dev tools — versions pinned for reproducibility.
+# NOTE: Install as root, then drop privileges.
+# -------------------------------------------------------------------
+# Splitting into multiple RUN commands uses Docker layer caching efficiently.
+# If a download fails, it only retries that specific layer, not everything.
+
+RUN apk add --no-cache --no-progress \
+      git \
+      ca-certificates \
+      tzdata \
+      openssl \
+      curl \
+      bash \
+      make
+
+RUN curl -fSL -o /tmp/air.tar.gz https://github.com/cosmtrek/air/releases/download/v1.52.3/air_1.52.3_linux_amd64.tar.gz \
+    && tar -xzf /tmp/air.tar.gz -C /go/bin air \
+    && curl -fSL -o /tmp/gcl.tar.gz https://github.com/golangci/golangci-lint/releases/download/v1.61.0/golangci-lint-1.61.0-linux-amd64.tar.gz \
+    && tar -xzf /tmp/gcl.tar.gz -C /go/bin --strip-components=1 golangci-lint-1.61.0-linux-amd64/golangci-lint \
+    && curl -fSL -o /tmp/mockery.tar.gz https://github.com/vektra/mockery/releases/download/v2.45.0/mockery_2.45.0_Linux_x86_64.tar.gz \
+    && tar -xzf /tmp/mockery.tar.gz -C /go/bin mockery \
+    && curl -fSL -o /tmp/swag.tar.gz https://github.com/swaggo/swag/releases/download/v1.16.3/swag_1.16.3_linux_amd64.tar.gz \
+    && tar -xzf /tmp/swag.tar.gz -C /go/bin swag \
+    && rm -f /tmp/*.tar.gz
+# -------------------------------------------------------------------
+RUN addgroup -g 1000 -S app && adduser -u 1000 -S app -G app
+
+# NOTE: Dev container runs as root to avoid Go cache volume permission issues.
+# Non-root security is enforced in the production distroless image.
+
+WORKDIR /app
+
+EXPOSE 50051 8080 2345
+
+CMD ["air", "-c", ".air.toml"]

@@ -3,17 +3,21 @@ package app
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 
 	"github.com/TaroPood/taropood/internal/config"
+	"github.com/TaroPood/taropood/internal/db"
 	"github.com/TaroPood/taropood/internal/logger"
 	"github.com/TaroPood/taropood/pkg/api"
+	"gorm.io/gorm"
 )
 
 type App struct {
 	config *config.Config
 	server *api.Server
+	db     *gorm.DB
 }
 
 func NewApp(cfg *config.Config) (*App, error) {
@@ -21,8 +25,17 @@ func NewApp(cfg *config.Config) (*App, error) {
 	app := &App{
 		config: cfg,
 	}
-	app.server = SetupServer(&cfg.HTTP, func(_ context.Context) error { return nil })
+
+	database, err := db.NewDataBase(cfg.Postgres.DSN(), cfg.Postgres.MaxOpenConns, cfg.Postgres.MaxIdleConns, cfg.Postgres.ConnMaxLifetime)
+	if err != nil {
+		return nil, fmt.Errorf("database connection failed: %w", err)
+	}
+	slog.Info("database connected", "host", cfg.Postgres.Host, "port", cfg.Postgres.Port, "db", cfg.Postgres.Db)
+	app.db = database
+
+	app.server = SetupServer(&cfg.HTTP, db.ReadinessCheck(database))
 	slog.Info(cfg.Log.Level)
+
 	return app, nil
 }
 
@@ -54,6 +67,17 @@ func (a *App) Shutdown(ctx context.Context) error {
 		}
 		slog.Info("HTTP server stopped")
 	}
+
+	if a.db != nil {
+		sqlDB, err := a.db.DB()
+		if err == nil {
+			if err := sqlDB.Close(); err != nil {
+				slog.Error("database close error", "error", err)
+			}
+			slog.Info("database connection closed")
+		}
+	}
+
 	slog.Info("shutdown complete")
 	return nil
 }

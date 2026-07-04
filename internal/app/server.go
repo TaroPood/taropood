@@ -12,8 +12,6 @@ import (
 	"github.com/TaroPood/taropood/pkg/api"
 )
 
-// TODO: replace the no-op check with actual DB/redis health checks
-// when dependencies are implemented.
 func SetupServer(httpCfg *config.HTTPConfig, checks ...func(ctx context.Context) error) *api.Server{
 	mux := http.NewServeMux()
 	healthHandler := handler.NewHealthHandler(checks...)

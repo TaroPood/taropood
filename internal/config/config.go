@@ -10,9 +10,10 @@ import (
 )
 
 type Config struct {
-	App        AppConfig        `mapstructure:"app"`
-	HTTP       HTTPConfig       `mapstructure:"http"`
-	Log        LogConfig        `mapstructure:"log"`
+	App      AppConfig      `mapstructure:"app"`
+	HTTP     HTTPConfig     `mapstructure:"http"`
+	Log      LogConfig      `mapstructure:"log"`
+	Postgres PostgresConfig `mapstructure:"postgres"`
 }
 
 type AppConfig struct {
@@ -33,6 +34,24 @@ type LogConfig struct {
 	Format    string `mapstructure:"format" env:"LOG_FORMAT"`
 	Output    string `mapstructure:"output" env:"LOG_OUTPUT"`
 	AddSource bool   `mapstructure:"add_source" env:"LOG_ADD_SOURCE"`
+}
+
+type PostgresConfig struct {
+	Host            string        `mapstructure:"host" env:"POSTGRES_HOST"`
+	Port            string        `mapstructure:"port" env:"POSTGRES_PORT"`
+	User            string        `mapstructure:"user" env:"POSTGRES_USER"`
+	Password        string        `mapstructure:"password" env:"POSTGRES_PASSWORD"`
+	Db              string        `mapstructure:"db" env:"POSTGRES_DB"`
+	SSLMode         string        `mapstructure:"sslmode" env:"POSTGRES_SSLMODE"`
+	MaxOpenConns    int           `mapstructure:"max_open_conns" env:"POSTGRES_MAX_OPEN_CONNS"`
+	MaxIdleConns    int           `mapstructure:"max_idle_conns" env:"POSTGRES_MAX_IDLE_CONNS"`
+	ConnMaxLifetime time.Duration `mapstructure:"conn_max_lifetime" env:"POSTGRES_CONN_MAX_LIFETIME"`
+	ConnectTimeout  time.Duration `mapstructure:"connect_timeout" env:"POSTGRES_CONNECT_TIMEOUT"`
+}
+
+func (p *PostgresConfig) DSN() string {
+	return fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=%s&connect_timeout=%d",
+		p.User, p.Password, p.Host, p.Port, p.Db, p.SSLMode, int(p.ConnectTimeout.Seconds()))
 }
 
 // Validate checks required configuration and returns error on first failure.
@@ -129,6 +148,16 @@ func bindEnvKeys(v *viper.Viper) {
 		"log.format":                      "LOG_FORMAT",
 		"log.output":                      "LOG_OUTPUT",
 		"log.add_source":                  "LOG_ADD_SOURCE",
+		"postgres.host":                   "POSTGRES_HOST",
+		"postgres.port":                   "POSTGRES_PORT",
+		"postgres.user":                   "POSTGRES_USER",
+		"postgres.password":               "POSTGRES_PASSWORD",
+		"postgres.db":                     "POSTGRES_DB",
+		"postgres.sslmode":                "POSTGRES_SSLMODE",
+		"postgres.max_open_conns":         "POSTGRES_MAX_OPEN_CONNS",
+		"postgres.max_idle_conns":         "POSTGRES_MAX_IDLE_CONNS",
+		"postgres.conn_max_lifetime":      "POSTGRES_CONN_MAX_LIFETIME",
+		"postgres.connect_timeout":        "POSTGRES_CONNECT_TIMEOUT",
 	}
 
 	for key, env := range envBindings {
@@ -148,7 +177,16 @@ func setDefaults(v *viper.Viper) {
 		"log.format":                      "json",
 		"log.output":                      "stdout",
 		"log.add_source":                  false,
-	
+		"postgres.host":                   "localhost",
+		"postgres.port":                   "5432",
+		"postgres.user":                   "taropood",
+		"postgres.password":               "taropood",
+		"postgres.db":                     "taropood",
+		"postgres.sslmode":                "disable",
+		"postgres.max_open_conns":         25,
+		"postgres.max_idle_conns":         10,
+		"postgres.conn_max_lifetime":      "5m",
+		"postgres.connect_timeout":        "5s",
 	}
 
 	for key, val := range defaults {

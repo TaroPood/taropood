@@ -19,3 +19,15 @@ log:
   output: "stdout"             # LOG_OUTPUT  
   add_source: false
 
+# --- Postgres Database  -------------------------
+postgres:
+  host: "localhost"
+  port: "5432"
+  user: "taropood"
+  password: "taropood"
+  db: "taropood"
+  sslmode: "disable"
+  max_open_conns: 25
+  max_idle_conns: 10
+  conn_max_lifetime: 5m
+  connect_timeout: 5s

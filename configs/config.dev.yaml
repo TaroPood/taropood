@@ -6,7 +6,7 @@ app:
 
 # --- HTTP server (REST / admin / metrics) ----------------------------------
 http:
-  addr: ":8091"                # HTTP_ADDR
+  addr: ":8095"                # HTTP_ADDR
   read_timeout: 10s            # HTTP_READ_TIMEOUT
   write_timeout: 10s           # HTTP_WRITE_TIMEOUT
   shutdown_timeout: 15s        # HTTP_SHUTDOWN_TIMEOUT
@@ -18,4 +18,19 @@ log:
   format: "json"               # LOG_FORMAT  (json | text)
   output: "stdout"             # LOG_OUTPUT  
   add_source: false
+
+
+# --- Postgres Database  -------------------------
+postgres:
+  host: "localhost"
+  port: "5432"
+  user: "taropood"
+  password: "taropood"
+  db: "taropood"
+  sslmode: "disable"
+  max_open_conns: 25
+  max_idle_conns: 10
+  conn_max_lifetime: 5m
+  connect_timeout: 5s
+
 
