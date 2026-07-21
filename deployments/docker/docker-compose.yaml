@@ -65,7 +65,7 @@ services:
       start_period: 15s
     deploy:
       resources:
-        limits: { memory: 1G, cpus: "2.0" }
+        limits: { memory: 2G, cpus: "2.0" }
     networks: [taropood-net]
 
 volumes:

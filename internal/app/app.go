@@ -11,14 +11,17 @@ import (
 	"github.com/TaroPood/taropood/internal/config"
 	"github.com/TaroPood/taropood/internal/db"
 	"github.com/TaroPood/taropood/internal/logger"
+	"github.com/TaroPood/taropood/internal/repository"
+	"github.com/TaroPood/taropood/internal/repository/postgres"
 	"github.com/TaroPood/taropood/pkg/api"
 	"gorm.io/gorm"
 )
 
 type App struct {
-	config *config.Config
-	server *api.Server
-	db     *gorm.DB
+	config         *config.Config
+	server         *api.Server
+	db             *gorm.DB
+	RuleRepository repository.RuleRepository
 }
 
 func NewApp(cfg *config.Config) (*App, error) {
@@ -34,7 +37,9 @@ func NewApp(cfg *config.Config) (*App, error) {
 	slog.Info("database connected", "host", cfg.Postgres.Host, "port", cfg.Postgres.Port, "db", cfg.Postgres.Db)
 	app.db = database
 
-	app.server = SetupServer(&cfg.HTTP, db.ReadinessCheck(database))
+	app.RuleRepository = postgres.NewRuleRepository(database)
+
+	app.server = SetupServer(&cfg.HTTP, app.RuleRepository, db.ReadinessCheck(database))
 	slog.Info("application initialized", "log_level", cfg.Log.Level)
 
 	return app, nil

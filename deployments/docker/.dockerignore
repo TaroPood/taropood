@@ -1,0 +1,44 @@
+# Git
+.git
+.gitignore
+
+# Binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Go
+vendor/
+dist/
+build/
+*.prof
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env
+.env
+.env.local
+.env.example
+
+# Temp
+tmp/
+
+# Docs
+docs/
+README.md
+
+# Config
+configs/
